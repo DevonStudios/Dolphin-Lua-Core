@@ -985,12 +985,10 @@ void SDRUpdated()
 	}
 	if (htabmask & ~xx)
 	{
-		return;
 	}
 	u32 htaborg = SDR1_HTABORG(PowerPC::ppcState.spr[SPR_SDR]);
 	if (htaborg & xx)
 	{
-		return;
 	}
 	PowerPC::ppcState.pagetable_base = htaborg<<16;
 	PowerPC::ppcState.pagetable_hashmask = ((xx<<10)|0x3ff);
