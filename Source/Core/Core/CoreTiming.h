@@ -30,14 +30,12 @@ extern s64 g_globalTimer;
 extern u64 g_fakeTBStartValue;
 extern u64 g_fakeTBStartTicks;
 extern int g_slicelength;
-extern float g_lastOCFactor_inverted;
 
 void Init();
 void Shutdown();
 
 typedef void (*TimedCallback)(u64 userdata, s64 cyclesLate);
 
-// This should only be called from the CPU thread, if you are calling it any other thread, you are doing something evil
 u64 GetTicks();
 u64 GetIdleTicks();
 

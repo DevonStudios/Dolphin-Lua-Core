@@ -283,13 +283,7 @@ void Jit64::mfspr(UGeckoInstruction inst)
 
 		// An inline implementation of CoreTiming::GetFakeTimeBase, since in timer-heavy games the
 		// cost of calling out to C for this is actually significant.
-		// Scale downcount by the CPU overclocking factor.
-		CVTSI2SS(XMM0, PPCSTATE(downcount));
-		MULSS(XMM0, M(&CoreTiming::g_lastOCFactor_inverted));
-		CVTSS2SI(RDX, R(XMM0)); // RDX is downcount scaled by the overclocking factor
-		MOV(32, R(RAX), M(&CoreTiming::g_slicelength));
-		SUB(64, R(RAX), R(RDX)); // cycles since the last CoreTiming::Advance() event is (slicelength - Scaled_downcount)
-		ADD(64, R(RAX), M(&CoreTiming::g_globalTimer));
+		MOV(64, R(RAX), M(&CoreTiming::g_globalTimer));
 		SUB(64, R(RAX), M(&CoreTiming::g_fakeTBStartTicks));
 		// It might seem convenient to correct the timer for the block position here for even more accurate
 		// timing, but as of currently, this can break games. If we end up reading a time *after* the time

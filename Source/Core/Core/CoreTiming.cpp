@@ -59,9 +59,6 @@ static s64 idledCycles;
 static u32 fakeDecStartValue;
 static u64 fakeDecStartTicks;
 
-// Are we in a function that has been called from Advance()
-static bool globalTimerIsSane;
-
 s64 g_globalTimer;
 u64 g_fakeTBStartValue;
 u64 g_fakeTBStartTicks;
@@ -142,7 +139,6 @@ void Init()
 	g_slicelength = maxslicelength;
 	g_globalTimer = 0;
 	idledCycles = 0;
-	globalTimerIsSane = true;
 
 	ev_lost = RegisterEvent("_lost_event", &EmptyTimedCallback);
 }
@@ -218,16 +214,9 @@ void DoState(PointerWrap &p)
 	p.DoMarker("CoreTimingEvents");
 }
 
-// This should only be called from the CPU thread, if you are calling it any other thread, you are doing something evil
 u64 GetTicks()
 {
-	u64 ticks = (u64)g_globalTimer;
-	if (!globalTimerIsSane)
-	{
-		int downcount = DowncountToCycles(PowerPC::ppcState.downcount);
-		ticks += g_slicelength - downcount;
-	}
-	return ticks;
+	return (u64)g_globalTimer;
 }
 
 u64 GetIdleTicks()
@@ -323,13 +312,7 @@ void ScheduleEvent(s64 cyclesIntoFuture, int event_type, u64 userdata)
 	Event *ne = GetNewEvent();
 	ne->userdata = userdata;
 	ne->type = event_type;
-	ne->time = GetTicks() + cyclesIntoFuture;
-
-	// If this event needs to be scheduled before the next advance(), force one early
-	if (!globalTimerIsSane)
-		ForceExceptionCheck(cyclesIntoFuture);
-
-
+	ne->time = g_globalTimer + cyclesIntoFuture;
 	AddEventToQueue(ne);
 }
 
@@ -427,8 +410,6 @@ void Advance()
 	g_lastOCFactor_inverted = 1.0f / s_lastOCFactor;
 	g_slicelength = maxslicelength;
 
-	globalTimerIsSane = true;
-
 	while (first && first->time <= g_globalTimer)
 	{
 		//LOG(POWERPC, "[Scheduler] %s     (%lld, %lld) ",
@@ -438,8 +419,6 @@ void Advance()
 		event_types[evt->type].callback(evt->userdata, (int)(g_globalTimer - evt->time));
 		FreeEvent(evt);
 	}
-
-	globalTimerIsSane = false;
 
 	if (first)
 	{
